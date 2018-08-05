@@ -36,10 +36,8 @@ def get_data(symbols,start_date,end_date, addSPY=True, colname = 'Adj Close'):
         if symbol == 'SPY':  # drop dates SPY did not trade
             df = df.dropna(subset=["SPY"])
 
-    if not includes_spy: 
-        symbols.remove('SPY')
     print('*** USING TEST DATA ***')
-    return df[symbols]
+    return df
 
 """Added by Krys Mathis"""
 def get_yahoo_data(symbols, start_date, end_date, addSPY=True, colname = 'Adj Close'):
@@ -48,9 +46,7 @@ def get_yahoo_data(symbols, start_date, end_date, addSPY=True, colname = 'Adj Cl
     dates = pd.date_range(start_date, end_date)
     df = pd.DataFrame(index=dates)
     
-    includes_spy = True if 'SPY' in symbols else False
-    
-    if not includes_spy and addSPY:  # add SPY for reference, if absent
+    if 'SPY' not in symbols and addSPY:  # add SPY for reference, if absent
         symbols.insert(0, 'SPY')
 
     for symbol in symbols:
@@ -62,11 +58,8 @@ def get_yahoo_data(symbols, start_date, end_date, addSPY=True, colname = 'Adj Cl
         
         if symbol == 'SPY':  # drop dates SPY did not trade
             df = df.dropna(subset=["SPY"])
-        
-    if not includes_spy: 
-        symbols.remove('SPY')
-    
-    return df[symbols]
+
+    return df
 
 
 def plot_data(df, title="Stock prices", xlabel="Date", ylabel="Price"):
@@ -85,3 +78,11 @@ def get_learner_data_file(basefilename):
 
 def get_robot_world_file(basefilename):
     return open(os.path.join(os.environ.get("ROBOT_WORLDS_DIR",'testworlds/'),basefilename))
+
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')

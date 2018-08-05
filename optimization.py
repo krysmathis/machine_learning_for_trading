@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize as spo
 import util as util
-from portfolio import compute_portfolio_stats
+import argparse 
+from portfolio import compute_portfolio_stats, compute_port_val
 
 def error(line, data): # error function
     """Compute error between given line model and observed data
@@ -143,7 +144,9 @@ def optimize_portfolio(sd, ed, syms, gen_plot=False):
     """
 
     data = util.get_data(syms, sd, ed)
-    print(data.head())
+    prices = data[syms] # with or without SPY
+    prices_SPY = data['SPY']
+
     # generate an initial guess for the minimizer
     initial_guess = np.ones(len(syms))/len(syms)
 
@@ -154,24 +157,64 @@ def optimize_portfolio(sd, ed, syms, gen_plot=False):
     constraints = ({'type': 'eq', 'fun': lambda x:  np.sum(x)-1.0},)
     # constraints = ({ 'type': 'ineq', 'fun': lambda inputs: 1 - np.sum(inputs) },{ 'type': 'ineq', 'fun': lambda x: x[0] * (x[0]-1) })
 
-    result = spo.minimize(calc_error_sharpe, initial_guess, args=(data,), method='SLSQP', bounds = bnds, constraints=constraints, options={'disp': True})
+    result = spo.minimize(calc_error_sharpe, initial_guess, args=(prices,), method='SLSQP', bounds = bnds, constraints=constraints, options={'disp': True})
     optimal_alloc = result.x
 
     print("OPTIMAL_ALLOC: {}".format(str(optimal_alloc)))
     # take the optimal allocation and recalc stats for output
-    cr, adr, sddr, sr = compute_portfolio_stats(optimal_alloc, data)
+    cr, adr, sddr, sr = compute_portfolio_stats(optimal_alloc, prices)
     
     print("sharpe ratio: {}".format(sr))
     
+    if gen_plot:
+        port_val = compute_port_val(optimal_alloc, prices)
+        SPY_val = prices_SPY/prices_SPY.iloc[0]       
+
+        df_temp = pd.concat([port_val, SPY_val], keys=['Portfolio', 'SPY'], axis=1)
+        util.plot_data(df_temp)
+
     return result, cr, adr, sddr, sr
     # optimize for Sharpe Ratio - 1
 
     
 if __name__ == '__main__':
     
+    # suppress scientific notation from numpy
+    np.set_printoptions(suppress=True)
+
+    parser = argparse.ArgumentParser(description='Optimizer')
+
+    parser.add_argument('start_date', 
+        help="start date cannot be blank"
+    )
+
+    parser.add_argument('end_date',
+        help="end date cannot be blank"
+    )
+
+    parser.add_argument('-l','--list', nargs='+', help='<Required> Set flag', required=True)
+    
+    parser.add_argument('--quiet', dest='gen_plot', action='store_false')
+
+    args = parser.parse_args()
+    
+    syms = args.list
+    sd = dt.datetime.strptime(args.start_date,'%Y-%m-%d')
+    ed = dt.datetime.strptime(args.end_date,'%Y-%m-%d')
+    gen_plot = True
+
+    if args.gen_plot == False:
+         gen_plot = False 
+    else: 
+        gen_plot = True
+
     allocs, cr, adr, sddr, sr = \
-    optimize_portfolio(sd=dt.datetime(2010,1,1), ed=dt.datetime(2010,12,31), \
-     syms=['GOOG','AAPL','GLD','XOM'], gen_plot=True)
+        optimize_portfolio(sd=sd, ed=ed, \
+        syms=syms, gen_plot=gen_plot)
+
+    # allocs, cr, adr, sddr, sr = \
+    # optimize_portfolio(sd=dt.datetime(2004,1,1), ed=dt.datetime(2010,12,31), \
+    #  syms=['GOOG','AAPL','GLD','XOM'], gen_plot=True)
 
     #print('complete')
 

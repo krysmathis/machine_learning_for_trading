@@ -4,6 +4,25 @@ import pandas as pd
 import numpy as np
 import math
 
+def compute_port_val(allocs, prices):
+    """
+        Compute the portfolio value of a group of stocks
+        based on the allocation
+    """
+    # normalized price
+        # normalized prices
+    normed = prices/prices.iloc[0]
+    prices.head()
+    alloced = normed * allocs
+
+    # position values
+    start_val = 1 # included to simplify adding ability to calc as $
+    pos_vals = alloced * start_val
+
+    # portfolio value
+    port_val = pos_vals.sum(axis=1)
+
+    return port_val
 
 def compute_portfolio_stats(allocs,prices,rfr=0, sf=252):
     """
@@ -17,18 +36,10 @@ def compute_portfolio_stats(allocs,prices,rfr=0, sf=252):
         rfr = risk free rate
         sf = sampling frequency, daily = 252, weekly = 52, monthly = 12
     """
-    # normalized prices
-    normed = prices/prices.iloc[0]
-    
-    alloced = normed * allocs
-
-    # position values
-    start_val = 1 # included to simplify adding ability to calc as $
-    pos_vals = alloced * start_val
 
     # portfolio value
-    port_val = pos_vals.sum(axis=1)
-    
+    port_val = compute_port_val(allocs, prices)
+
     daily_rets = port_val/port_val.shift(1) - 1
     daily_rets = daily_rets[1:]
 
